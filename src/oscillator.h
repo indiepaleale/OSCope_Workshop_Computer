@@ -42,9 +42,17 @@ public:
 
 class YinYang : public Oscillator
 {
+    // rotation phase accumulator
+    uint32_t ph_rot = 0;
 public:
-    void __not_in_flash_func(compute)(uint32_t ph, int32_t ph_rot, int32_t grow, int32_t *out) override
+    void __not_in_flash_func(compute)(uint32_t ph, int32_t mod_grow, int32_t mod_rot, int32_t *out) override
     {
+        // increment rotation phase
+        ph_rot += mod_rot -2048 << 10;
+
+        // clamp grow factor
+        uint32_t grow = (uint32_t)(mod_grow < 0 ? 0 : (mod_grow > 4096 ? 4096 : mod_grow)) << 20;
+
         // prepare sign and phase for both yin and yang
         int32_t sign = ph >> 31 ? -1 : 1;                                // sign bit
         uint32_t ph_all = (uint32_t)(((uint64_t)(ph * 2) * grow) >> 32); // phase scaled by grow factor
@@ -81,7 +89,7 @@ public:
         }
 
         int64_t x = sign * out[0];
-        int64_t y = sign * out[1];
+        int64_t y = sign * (out[1] + 8);
 
         // apply rotation
         out[0] = (int32_t)((x * sine(ph_rot) + y * sine(ph_rot + 0x40000000)) >> 12);
