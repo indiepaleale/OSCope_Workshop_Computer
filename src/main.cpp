@@ -9,6 +9,9 @@ class WT : public ComputerCard
   uint32_t ph_rot;
 
   YinYang yinyang;
+  PolyCube polycube;
+  PolyCone polycone;
+  PolyICO polyico;
 
 public:
   WT()
@@ -31,7 +34,7 @@ public:
     int32_t mod1 = KnobVal(X) + CVIn1();
     int32_t mod2 = KnobVal(Y) + CVIn2();
 
-    yinyang.compute(phase, mod1, mod2, out);
+    polyico.compute(phase, mod1, mod2, out);
 
     AudioOut1(out[0]);
     AudioOut2(out[1]);

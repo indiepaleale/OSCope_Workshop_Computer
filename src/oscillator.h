@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <cmath>
 #include "lookup_tables.h"
+#include "mesh_data.h"
 
+// Base Oscillator class
 class Oscillator
 {
 protected:
@@ -40,15 +42,19 @@ public:
     virtual ~Oscillator() = default;
 };
 
+/// Derived oscillator classes
+
+// YinYang Shape Oscillator
 class YinYang : public Oscillator
 {
     // rotation phase accumulator
     uint32_t ph_rot = 0;
+
 public:
     void __not_in_flash_func(compute)(uint32_t ph, int32_t mod_grow, int32_t mod_rot, int32_t *out) override
     {
         // increment rotation phase
-        ph_rot += mod_rot -2048 << 10;
+        ph_rot += mod_rot - 2048 << 10;
 
         // clamp grow factor
         uint32_t grow = (uint32_t)(mod_grow < 0 ? 0 : (mod_grow > 4096 ? 4096 : mod_grow)) << 20;
@@ -92,7 +98,140 @@ public:
         int64_t y = sign * (out[1] + 8);
 
         // apply rotation
-        out[0] = (int32_t)((x * sine(ph_rot) + y * sine(ph_rot + 0x40000000)) >> 12);
-        out[1] = (int32_t)((-y * sine(ph_rot) + x * sine(ph_rot + 0x40000000)) >> 12);
+        int32_t s = sine(ph_rot);
+        int32_t c = sine(ph_rot + 0x40000000);
+
+        out[0] = (int32_t)((x * s + y * c) >> 11);
+        out[1] = (int32_t)((x * c - y * s) >> 11);
+    }
+};
+
+// Polygon Waveform Oscillator
+class PolyCube : public Oscillator
+{
+    const Point3D* path = CUBE_PATH;
+    const uint32_t path_count = CUBE_PATH_COUNT;
+    uint32_t ph_rot = 0;
+
+public:
+    void __not_in_flash_func(compute)(uint32_t ph, int32_t mod_grow, int32_t mod_rot, int32_t *out) override
+    {
+        // clamp grow factor
+        uint32_t grow = (uint32_t)(mod_grow < 0 ? 0 : (mod_grow > 4096 ? 4096 : mod_grow)) << 20;
+        ph = (uint32_t)(((uint64_t)ph * grow) >> 32);
+
+        ph_rot += mod_rot - 2048 << 10;
+
+        // interpolate position along cube path
+        uint32_t segment = ((uint64_t)ph * (path_count - 1)) >> 32;
+        uint16_t frac = (uint16_t)(((uint64_t)ph * (path_count - 1) & 0xFFFFFFFF) >> 22);
+
+        Point3D p1 = path[segment];
+        Point3D p2 = path[(segment + 1) % path_count];
+
+        int32_t x = p1.x + (((p2.x - p1.x) * (int32_t)frac) >> 10);
+        int32_t y = p1.y + (((p2.y - p1.y) * (int32_t)frac) >> 10);
+        int32_t z = p1.z + (((p2.z - p1.z) * (int32_t)frac) >> 10);
+
+        // apply rotation
+        int32_t s = sine(ph_rot);
+        int32_t c = sine(ph_rot + 0x40000000);
+
+        int32_t rx = int(x * c - z * s) >> 11;
+        int32_t ry = y;
+        int32_t rz = (x * s + z * c) >> 11;
+
+        // isometric projection, 30 degrees
+        int32_t u = rx;
+        int32_t v = (rz >> 1) + ((ry * 3547) >> 12);
+
+        out[0] = u >> 1; // Scale to fit your specific output range
+        out[1] = v >> 1;
+    }
+};
+
+class PolyCone : public Oscillator
+{ 
+    const Point3D* path = CONE_PATH;
+    const uint32_t path_count = CUBE_PATH_COUNT;
+    uint32_t ph_rot = 0;
+
+public:
+    void __not_in_flash_func(compute)(uint32_t ph, int32_t mod_grow, int32_t mod_rot, int32_t *out) override
+    {
+        // clamp grow factor
+        uint32_t grow = (uint32_t)(mod_grow < 0 ? 0 : (mod_grow > 4096 ? 4096 : mod_grow)) << 20;
+        ph = (uint32_t)(((uint64_t)ph * grow) >> 32);
+
+        ph_rot += mod_rot - 2048 << 10;
+
+        // interpolate position along cube path
+        uint32_t segment = ((uint64_t)ph * (path_count - 1)) >> 32;
+        uint16_t frac = (uint16_t)(((uint64_t)ph * (path_count - 1) & 0xFFFFFFFF) >> 22);
+
+        Point3D p1 = path[segment];
+        Point3D p2 = path[(segment + 1) % path_count];
+
+        int32_t x = p1.x + (((p2.x - p1.x) * (int32_t)frac) >> 10);
+        int32_t y = p1.y + (((p2.y - p1.y) * (int32_t)frac) >> 10);
+        int32_t z = p1.z + (((p2.z - p1.z) * (int32_t)frac) >> 10);
+
+        // apply rotation
+        int32_t s = sine(ph_rot);
+        int32_t c = sine(ph_rot + 0x40000000);
+
+        int32_t rx = int(x * c - z * s) >> 11;
+        int32_t ry = y;
+        int32_t rz = (x * s + z * c) >> 11;
+
+        // isometric projection, 30 degrees
+        int32_t u = rx;
+        int32_t v = (rz >> 1) + ((ry * 3547) >> 12);
+
+        out[0] = u >> 1; // Scale to fit your specific output range
+        out[1] = v >> 1;
+    }
+};
+
+class PolyICO : public Oscillator
+{ 
+    const Point3D* path = ICOSPHERE_PATH;
+    const uint32_t path_count = ICOSPHERE_PATH_COUNT;
+    uint32_t ph_rot = 0;
+
+public:
+    void __not_in_flash_func(compute)(uint32_t ph, int32_t mod_grow, int32_t mod_rot, int32_t *out) override
+    {
+        // clamp grow factor
+        uint32_t grow = (uint32_t)(mod_grow < 0 ? 0 : (mod_grow > 4096 ? 4096 : mod_grow)) << 20;
+        ph = (uint32_t)(((uint64_t)ph * grow) >> 32);
+
+        ph_rot += mod_rot - 2048 << 10;
+
+        // interpolate position along cube path
+        uint32_t segment = ((uint64_t)ph * (path_count - 1)) >> 32;
+        uint16_t frac = (uint16_t)(((uint64_t)ph * (path_count - 1) & 0xFFFFFFFF) >> 22);
+
+        Point3D p1 = path[segment];
+        Point3D p2 = path[(segment + 1) % path_count];
+
+        int32_t x = p1.x + (((p2.x - p1.x) * (int32_t)frac) >> 10);
+        int32_t y = p1.y + (((p2.y - p1.y) * (int32_t)frac) >> 10);
+        int32_t z = p1.z + (((p2.z - p1.z) * (int32_t)frac) >> 10);
+
+        // apply rotation
+        int32_t s = sine(ph_rot);
+        int32_t c = sine(ph_rot + 0x40000000);
+
+        int32_t rx = int(x * c - z * s) >> 11;
+        int32_t ry = y;
+        int32_t rz = (x * s + z * c) >> 11;
+
+        // isometric projection, 30 degrees
+        int32_t u = rx;
+        int32_t v = (rz >> 1) + ((ry * 3547) >> 12);
+
+        out[0] = u >> 1; // Scale to fit your specific output range
+        out[1] = v >> 1;
     }
 };
