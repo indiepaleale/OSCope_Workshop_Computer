@@ -135,7 +135,7 @@ public:
 
         // apply rotation
         int32_t s = sine(ph_rot);
-        int32_t c = sine(ph_rot + 0x40000000);
+        int32_t c = sine(ph_rot - 0x40000000);
 
         int32_t rx = int(x * c - z * s) >> 11;
         int32_t ry = y;
@@ -178,7 +178,7 @@ public:
 
         // apply rotation
         int32_t s = sine(ph_rot);
-        int32_t c = sine(ph_rot + 0x40000000);
+        int32_t c = sine(ph_rot - 0x40000000);
 
         int32_t rx = int(x * c - z * s) >> 11;
         int32_t ry = y;
@@ -221,7 +221,7 @@ public:
 
         // apply rotation
         int32_t s = sine(ph_rot);
-        int32_t c = sine(ph_rot + 0x40000000);
+        int32_t c = sine(ph_rot - 0x40000000);
 
         int32_t rx = int(x * c - z * s) >> 11;
         int32_t ry = y;
