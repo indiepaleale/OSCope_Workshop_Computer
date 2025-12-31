@@ -1,4 +1,5 @@
 #pragma once
+
 #include "ComputerCard.h"
 #include <cstdint>
 #include <cmath>

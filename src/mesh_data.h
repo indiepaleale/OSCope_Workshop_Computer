@@ -1,5 +1,4 @@
-#ifndef MESH_H
-#define MESH_H
+#pragma once
 
 #include <cstdint>
 
@@ -79,5 +78,3 @@ const Point3D ICOSPHERE_PATH[] = {
     {-1481, 915, 1076},
     {0, 2047, 0},
 };
-
-#endif
