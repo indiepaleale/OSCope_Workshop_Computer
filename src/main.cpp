@@ -12,6 +12,7 @@ class WT : public ComputerCard
   PolyCube polycube;
   PolyCone polycone;
   PolyICO polyico;
+  YinYangCalligraphy yinyang_c;
 
 public:
   WT()
@@ -23,7 +24,7 @@ public:
   {
     // oscillator phase increment
     int32_t knobMain = KnobVal(Main);
-    int32_t FM = AudioIn1();
+    int32_t FM = CVIn1();
     int32_t phaseInc = (knobMain * knobMain << 3) + (FM * FM << 3);
 
     phase += phaseInc < 0 ? 0 : phaseInc;
@@ -31,10 +32,10 @@ public:
     // prepare output
     int32_t out[2];
 
-    int32_t mod1 = KnobVal(X) + CVIn1();
-    int32_t mod2 = KnobVal(Y) + CVIn2();
+    int32_t mod1 = KnobVal(X) + AudioIn1();
+    int32_t mod2 = KnobVal(Y) + AudioIn2();
 
-    polyico.compute(phase, mod1, mod2, out);
+    yinyang_c.compute(phase, mod1, mod2, out);
 
     AudioOut1(out[0]);
     AudioOut2(out[1]);

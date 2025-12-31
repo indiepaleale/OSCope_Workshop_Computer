@@ -45,6 +45,8 @@ public:
 
 /// Derived oscillator classes
 
+/// OSC Bank 1 - Function defined shapes
+
 // YinYang Shape Oscillator
 class YinYang : public Oscillator
 {
@@ -107,10 +109,12 @@ public:
     }
 };
 
+/// OSC Bank 2 - Mesh geometry shapes
+
 // Polygon Waveform Oscillator
 class PolyCube : public Oscillator
 {
-    const Point3D* path = CUBE_PATH;
+    const Point3D *path = CUBE_PATH;
     const uint32_t path_count = CUBE_PATH_COUNT;
     uint32_t ph_rot = 0;
 
@@ -152,8 +156,8 @@ public:
 };
 
 class PolyCone : public Oscillator
-{ 
-    const Point3D* path = CONE_PATH;
+{
+    const Point3D *path = CONE_PATH;
     const uint32_t path_count = CUBE_PATH_COUNT;
     uint32_t ph_rot = 0;
 
@@ -195,9 +199,10 @@ public:
 };
 
 class PolyICO : public Oscillator
-{ 
-    const Point3D* path = ICOSPHERE_PATH;
+{
+    const Point3D *path = ICOSPHERE_PATH;
     const uint32_t path_count = ICOSPHERE_PATH_COUNT;
+
     uint32_t ph_rot = 0;
 
 public:
@@ -234,5 +239,48 @@ public:
 
         out[0] = u >> 1; // Scale to fit your specific output range
         out[1] = v >> 1;
+    }
+};
+
+/// OSC Bank 3 - Wavetable shapes (single cycle stereo samples from vector graphics)
+
+class YinYangCalligraphy : public Oscillator
+{
+    const StereoTable *YIN = &YIN_TABLE;
+    const StereoTable *YANG = &YANG_TABLE;
+
+public:
+    void __not_in_flash_func(compute)(uint32_t ph, int32_t mod_grow, int32_t mod_morph, int32_t *out) override
+    {
+        uint32_t grow = (uint32_t)(mod_grow < 0 ? 0 : (mod_grow > 4096 ? 4096 : mod_grow)) << 20;
+        ph = (uint32_t)(((uint64_t)ph * grow) >> 32);
+
+        uint32_t morph = (uint32_t)(mod_morph < 0 ? 0 : (mod_morph > 4096 ? 4096 : mod_morph)) << 20;
+
+        int32_t yin_l = lookup1024(ph, YIN->left);
+        int32_t yin_r = lookup1024(ph, YIN->right);
+        int32_t yang_l = lookup1024(ph, YANG->left);
+        int32_t yang_r = lookup1024(ph, YANG->right);
+
+        out[0] = (yin_l * (int32_t)(65536 - (morph >> 16)) + yang_l * (int32_t)(morph >> 16)) >> 16;
+        out[1] = - (yin_r * (int32_t)(65536 - (morph >> 16)) + yang_r * (int32_t)(morph >> 16)) >> 16;
+
+    }
+
+protected:
+    // ph: 32-bit
+    // table: int16_t[1024]
+    inline int32_t __not_in_flash_func(lookup1024)(uint32_t ph, const int16_t *table)
+    {
+        // 10-bit index for 1024 entries
+        uint32_t index = ph >> 22; // top 10 bits -> [0, 1023]
+        // 22-bit fractional part -> convert to 16-bit fraction
+        uint32_t r = (ph & 0x003FFFFF) >> 6; // keep upper 16 bits of fraction
+
+        int32_t s1 = table[index];
+        int32_t s2 = table[(index + 1) & 0x3FF]; // wrap at 1024
+
+        // Linear interpolation: ((s2 - s1) * r >> 16) + s1
+        return (s2 * (int32_t)r + s1 * (int32_t)(65536 - r)) >> 20;
     }
 };
