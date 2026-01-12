@@ -87,6 +87,15 @@ public:
     {
       CycleOscillator();
     }
+    if (PulseIn1RisingEdge()){
+      currentBank = (currentBank + 1) % 3;
+      currentOscIndex = 0;
+      currentOsc = banks[currentBank][currentOscIndex];
+    }
+    if( PulseIn2RisingEdge()){
+      currentOscIndex = (currentOscIndex + 1) % bankSizes[currentBank];
+      currentOsc = banks[currentBank][currentOscIndex];
+    }
 
     // Set guards when switch changes to prevent parameter jumps
     if (SwitchChanged())
