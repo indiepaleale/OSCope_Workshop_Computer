@@ -56,7 +56,7 @@ public:
   WT()
   {
     phase = 0;
-    currentOsc = bankFunc[0]; // Start with first oscillator
+    currentOsc = bankFunc[0];
   }
 
   void CycleOscillator()
@@ -65,26 +65,24 @@ public:
     currentOscIndex++;
     PulseOut(2, true);
 
-    // If we've exhausted oscillators in current bank, move to next bank
+    // Move to next bank
     if (currentOscIndex >= bankSizes[currentBank])
     {
       currentBank = (currentBank + 1) % 3; // Cycle through banks
       currentOscIndex = 0;
     }
 
-    // Update pointer to current oscillator
     currentOsc = banks[currentBank][currentOscIndex];
   }
 
-  static inline bool knobChanged(int32_t prev, int32_t curr)
+  static inline bool __not_in_flash_func(knobChanged)(int32_t prev, int32_t curr)
   {
     return (curr - prev > 4) || (prev - curr > 4);
   }
 
   virtual void ProcessSample()
   {
-
-    // Check for oscillator change
+    // Send Pulse on PulseOut1 when changing oscillator
     if (SwitchChanged() && SwitchVal() == Down)
     {
       CycleOscillator();
@@ -149,10 +147,8 @@ public:
     int32_t mod2 = mod2_off + (AudioIn2() * mod2_att >> 12);
 
     // oscillator phase increment
-    int32_t knobMain = KnobVal(Main);
-    int32_t phaseInc = knobMain * knobMain << 3;
-
-    phase += phaseInc < 0 ? 0 : phaseInc;
+    int32_t freq = KnobVal(Main) + CVIn1();
+    phase += FREQ_INC_LUT_EXP[freq > 4095 ? 4095 : (freq < 0 ? 0 : freq)];
 
     // prepare output
     int32_t out[2];

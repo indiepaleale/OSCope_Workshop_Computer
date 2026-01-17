@@ -131,11 +131,11 @@ if __name__ == "__main__":
     
     header_content = generate_header(obj_file, v_data, final_path)
     
-    with open("new_mesh_data.h", "w") as f:
+    with open("../data/new_mesh_data.h", "w") as f:
         f.write(header_content)
         
     print(f"--- Processing Complete ---")
     print(f"Input: {obj_file}")
     print(f"Unique Edges: {len(e_data)}")
     print(f"Path Points:  {len(final_path)}")
-    print(f"Header saved to: new_mesh_data.h")
+    print(f"Header saved to: ../dat/anew_mesh_data.h")

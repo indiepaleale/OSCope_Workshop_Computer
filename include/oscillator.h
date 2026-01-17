@@ -57,7 +57,7 @@ public:
     void __not_in_flash_func(compute)(uint32_t ph, int32_t mod_grow, int32_t mod_rot, int32_t *out) override
     {
         // increment rotation phase
-        ph_rot += mod_rot - 2048 << 10;
+        ph_rot += mod_rot - 2048 << 11;
 
         // clamp grow factor
         uint32_t grow = (uint32_t)(mod_grow < 0 ? 0 : (mod_grow > 4096 ? 4096 : mod_grow)) << 20;
@@ -263,8 +263,7 @@ public:
         int32_t yang_r = lookup1024(ph, YANG->right);
 
         out[0] = (yin_l * (int32_t)(65536 - (morph >> 16)) + yang_l * (int32_t)(morph >> 16)) >> 16;
-        out[1] = - (yin_r * (int32_t)(65536 - (morph >> 16)) + yang_r * (int32_t)(morph >> 16)) >> 16;
-
+        out[1] = -(yin_r * (int32_t)(65536 - (morph >> 16)) + yang_r * (int32_t)(morph >> 16)) >> 16;
     }
 
 protected:
